@@ -1,5 +1,6 @@
 #include "utils.h"
 
+extern t_log* logger;
 
 void* serializar_paquete(t_paquete* paquete, int bytes)
 {
@@ -26,13 +27,26 @@ int crear_conexion(char *ip, char* puerto)
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_flags = AI_PASSIVE;
 
-	getaddrinfo(ip, puerto, &hints, &server_info);
+	int errno = getaddrinfo(ip, puerto, &hints, &server_info);
+	if(errno != 0){
+		log_error(logger, "Se ha producido un error al obtener la información del servidor. Errno: %s", errno);
+		abort();
+	}
 
 	// Ahora vamos a crear el socket.
-	int socket_cliente = 0;
+	int socket_cliente = socket(
+		server_info->ai_family,
+		server_info->ai_socktype,
+        server_info->ai_protocol
+	);
 
 	// Ahora que tenemos el socket, vamos a conectarlo
-
+	errno = connect(socket_cliente, server_info->ai_addr, server_info->ai_addrlen);
+	
+	if(errno != 0){
+		log_error(logger, "Se ha producido un error al conectarse con el servidor.");
+		abort();
+	}
 
 	freeaddrinfo(server_info);
 
